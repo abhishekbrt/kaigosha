@@ -99,3 +99,22 @@ test('applyHeartbeat unblocks expired cooldown before counting time', () => {
   assert.equal(next.dailyUsedSec, 605);
   assert.equal(next.sessionUsedSec, 5);
 });
+
+test('zero-delta refresh does not overwrite last heartbeat timestamp', () => {
+  const now = at('2026-02-12T10:00:00.000Z');
+  const previousHeartbeat = now - 4000;
+  const state = {
+    dayKey: '2026-02-12',
+    dailyUsedSec: 100,
+    sessionUsedSec: 20,
+    mode: 'ALLOWED',
+    blockedUntilTs: null,
+    lastHeartbeatTs: previousHeartbeat,
+  };
+
+  const next = applyHeartbeat(state, CONFIG, now, 0);
+
+  assert.equal(next.dailyUsedSec, 100);
+  assert.equal(next.sessionUsedSec, 20);
+  assert.equal(next.lastHeartbeatTs, previousHeartbeat);
+});

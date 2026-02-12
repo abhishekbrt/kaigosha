@@ -107,11 +107,12 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
 
   let next = ensureCurrentDayState(state, nowTs);
   next = unblockIfElapsed(next, nowTs);
+  const nextHeartbeatTs = normalizedDeltaSec > 0 ? nowTs : next.lastHeartbeatTs;
 
   if (isBlocked(next, nowTs)) {
     return {
       ...next,
-      lastHeartbeatTs: nowTs,
+      lastHeartbeatTs: nextHeartbeatTs,
     };
   }
 
@@ -125,7 +126,7 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
       sessionUsedSec,
       mode: MODE.DAILY_BLOCK,
       blockedUntilTs: getNextLocalMidnightTs(nowTs),
-      lastHeartbeatTs: nowTs,
+      lastHeartbeatTs: nextHeartbeatTs,
     };
   }
 
@@ -136,7 +137,7 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
       sessionUsedSec: 0,
       mode: MODE.COOLDOWN,
       blockedUntilTs: nowTs + config.cooldownSec * 1000,
-      lastHeartbeatTs: nowTs,
+      lastHeartbeatTs: nextHeartbeatTs,
     };
   }
 
@@ -146,6 +147,6 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
     sessionUsedSec,
     mode: MODE.ALLOWED,
     blockedUntilTs: null,
-    lastHeartbeatTs: nowTs,
+    lastHeartbeatTs: nextHeartbeatTs,
   };
 }

@@ -8,12 +8,25 @@ const SITE_HOST_PATTERNS = {
 
 let formatTimerOverlayText = (siteStatus) => {
   const siteLabel = siteStatus?.siteKey === 'instagram' ? 'Instagram' : 'X';
+  const formatDuration = (totalSec) => {
+    const sec = Math.max(0, Math.floor(totalSec ?? 0));
+    const minutes = Math.floor(sec / 60);
+    const seconds = sec % 60;
+
+    if (minutes > 0 && seconds > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m`;
+    }
+    return `${seconds}s`;
+  };
+
   if (siteStatus?.blocked) {
-    return `${siteLabel} blocked (${siteStatus.reason ?? 'blocked'})`;
+    return `${siteLabel} blocked (${siteStatus.reason ?? 'blocked'}): ${formatDuration(siteStatus?.remainingSec)} left`;
   }
-  const sessionSec = Math.max(0, Math.floor(siteStatus?.sessionRemainingSec ?? 0));
-  const dailySec = Math.max(0, Math.floor(siteStatus?.dailyRemainingSec ?? 0));
-  return `${siteLabel}: Session ${sessionSec}s left • Daily ${dailySec}s left`;
+
+  return `${siteLabel}: Session ${formatDuration(siteStatus?.sessionRemainingSec)} left • Daily ${formatDuration(siteStatus?.dailyRemainingSec)} left`;
 };
 
 function hostMatches(hostname, domain) {
