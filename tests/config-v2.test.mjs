@@ -54,3 +54,10 @@ test('normalizeSettings falls back to defaults on malformed v2 payload', () => {
   assert.deepEqual(normalized.warning, DEFAULT_V2_SETTINGS.warning);
   assert.equal(normalized.sites.length, DEFAULT_V2_SETTINGS.sites.length);
 });
+
+test('normalizeSettings includes secure pin hashing iteration defaults', () => {
+  const normalized = normalizeSettings({ version: 2, sites: DEFAULT_V2_SETTINGS.sites });
+
+  assert.equal(typeof normalized.breakGlass.pinIterations, 'number');
+  assert.equal(normalized.breakGlass.pinIterations > 100000, true);
+});

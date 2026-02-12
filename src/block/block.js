@@ -1,3 +1,5 @@
+import { sanitizeReturnUrl } from '../core/security.mjs';
+
 function formatDuration(totalSec) {
   const sec = Math.max(0, Math.floor(totalSec || 0));
   const minutes = Math.floor(sec / 60);
@@ -86,13 +88,19 @@ async function activateBreakGlass(siteId, pin) {
 }
 
 function navigateToReturnUrl(returnUrl, siteStatus) {
-  if (returnUrl) {
-    window.location.href = returnUrl;
+  const allowedDomains = Array.isArray(siteStatus?.domains) ? siteStatus.domains : [];
+  const safeReturnUrl = sanitizeReturnUrl(returnUrl, allowedDomains);
+
+  if (safeReturnUrl) {
+    window.location.href = safeReturnUrl;
     return;
   }
 
-  if (siteStatus?.domains?.length) {
-    window.location.href = `https://${siteStatus.domains[0]}`;
+  if (allowedDomains.length > 0) {
+    const fallbackUrl = sanitizeReturnUrl(`https://${allowedDomains[0]}`, allowedDomains);
+    if (fallbackUrl) {
+      window.location.href = fallbackUrl;
+    }
   }
 }
 

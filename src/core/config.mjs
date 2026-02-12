@@ -33,6 +33,7 @@ export const DEFAULT_BREAK_GLASS = {
   enabled: true,
   pinHash: null,
   pinSalt: null,
+  pinIterations: 210000,
   durationSec: 5 * 60,
   maxUsesPerDay: 2,
 };
@@ -211,6 +212,10 @@ function normalizeBreakGlass(rawBreakGlass) {
     enabled: typeof rawBreakGlass.enabled === 'boolean' ? rawBreakGlass.enabled : DEFAULT_BREAK_GLASS.enabled,
     pinHash: typeof rawBreakGlass.pinHash === 'string' && rawBreakGlass.pinHash ? rawBreakGlass.pinHash : null,
     pinSalt: typeof rawBreakGlass.pinSalt === 'string' && rawBreakGlass.pinSalt ? rawBreakGlass.pinSalt : null,
+    pinIterations:
+      isPositiveInteger(rawBreakGlass.pinIterations) && rawBreakGlass.pinIterations >= 100000
+        ? rawBreakGlass.pinIterations
+        : DEFAULT_BREAK_GLASS.pinIterations,
     durationSec: isPositiveInteger(rawBreakGlass.durationSec) ? rawBreakGlass.durationSec : DEFAULT_BREAK_GLASS.durationSec,
     maxUsesPerDay: isPositiveInteger(rawBreakGlass.maxUsesPerDay) ? rawBreakGlass.maxUsesPerDay : DEFAULT_BREAK_GLASS.maxUsesPerDay,
   };

@@ -1,4 +1,5 @@
 import {
+  DEFAULT_BREAK_GLASS,
   DEFAULT_V2_SETTINGS,
   SETTINGS_VERSION,
   normalizeSettings,
@@ -18,7 +19,8 @@ import {
   isBreakGlassActive,
   normalizeBreakGlassRuntime,
 } from '../core/break-glass.mjs';
-import { compileSiteMatchers, getMatchedSiteFromUrl } from '../core/sites.mjs';
+import { compileSiteMatchers, getMatchedSiteFromHostname, getMatchedSiteFromUrl } from '../core/sites.mjs';
+import { sanitizeReturnUrl } from '../core/security.mjs';
 
 const STORAGE_SYNC_KEYS = {
   settings: 'settings_v2',
@@ -203,6 +205,35 @@ function getSiteByUrl(url) {
   return getSiteById(matched.id);
 }
 
+function getSiteByHostname(hostname) {
+  const matched = getMatchedSiteFromHostname(hostname, cache.matchers);
+  if (!matched) {
+    return null;
+  }
+
+  return getSiteById(matched.id);
+}
+
+function getSiteFromMessage(message, sender) {
+  if (typeof message?.siteId === 'string' && message.siteId) {
+    return getSiteById(message.siteId);
+  }
+
+  if (typeof message?.hostname === 'string' && message.hostname) {
+    return getSiteByHostname(message.hostname);
+  }
+
+  if (typeof message?.url === 'string' && message.url) {
+    return getSiteByUrl(message.url);
+  }
+
+  if (typeof sender?.tab?.url === 'string' && sender.tab.url) {
+    return getSiteByUrl(sender.tab.url);
+  }
+
+  return null;
+}
+
 function calculateHeartbeatDeltaSec(lastHeartbeatTs, nowTs) {
   if (!Number.isFinite(lastHeartbeatTs)) {
     return 1;
@@ -288,23 +319,32 @@ function getAllSiteStatuses(nowTs) {
   return statuses;
 }
 
+function getPublicSettings(settings) {
+  const sanitized = deepClone(settings);
+  sanitized.breakGlass.hasPin = Boolean(settings.breakGlass.pinHash && settings.breakGlass.pinSalt);
+  sanitized.breakGlass.pinHash = null;
+  sanitized.breakGlass.pinSalt = null;
+  return sanitized;
+}
+
 function buildStatusPayload(nowTs) {
   const statuses = getAllSiteStatuses(nowTs);
   const sitesById = Object.fromEntries(statuses.map((siteStatus) => [siteStatus.id, siteStatus]));
 
   return {
     nowTs,
-    settings: cache.settings,
+    settings: getPublicSettings(cache.settings),
     breakGlassRuntime: cache.breakGlassRuntime,
     sites: statuses,
     sitesById,
   };
 }
 
-function buildBlockUrl(siteId, reason, returnUrl) {
-  const params = new URLSearchParams({ siteId, reason });
-  if (returnUrl) {
-    params.set('returnUrl', returnUrl);
+function buildBlockUrl(site, reason, returnUrl) {
+  const params = new URLSearchParams({ siteId: site.id, reason });
+  const safeReturnUrl = sanitizeReturnUrl(returnUrl, site.domains);
+  if (safeReturnUrl) {
+    params.set('returnUrl', safeReturnUrl);
   }
 
   return chrome.runtime.getURL(`${BLOCK_PAGE_PATH}?${params.toString()}`);
@@ -335,7 +375,7 @@ async function maybeRedirectBlockedTab(tabId, url) {
     return;
   }
 
-  const blockUrl = buildBlockUrl(site.id, status.reason ?? 'cooldown', url);
+  const blockUrl = buildBlockUrl(site, status.reason ?? 'cooldown', url);
 
   try {
     await chrome.tabs.update(tabId, { url: blockUrl });
@@ -412,7 +452,7 @@ function maybeIssueSessionWarning(site, state, nowTs) {
 }
 
 async function handleHeartbeat(message, sender) {
-  const site = getSiteByUrl(message.url);
+  const site = getSiteFromMessage(message, sender);
   if (!site) {
     return {
       ok: true,
@@ -435,7 +475,8 @@ async function handleHeartbeat(message, sender) {
   const status = computeSiteStatus(site, next, nowTs);
 
   if (status.blocked && sender.tab?.id) {
-    await maybeRedirectBlockedTab(sender.tab.id, message.url);
+    const targetUrl = typeof sender.tab?.url === 'string' ? sender.tab.url : message.url;
+    await maybeRedirectBlockedTab(sender.tab.id, targetUrl);
   }
 
   await persistLocalState();
@@ -585,20 +626,78 @@ function bytesToHex(buffer) {
     .join('');
 }
 
+function hexToBytes(hex) {
+  if (typeof hex !== 'string' || hex.length % 2 !== 0) {
+    return null;
+  }
+
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let index = 0; index < hex.length; index += 2) {
+    const value = Number.parseInt(hex.slice(index, index + 2), 16);
+    if (Number.isNaN(value)) {
+      return null;
+    }
+    bytes[index / 2] = value;
+  }
+
+  return bytes;
+}
+
 function createSaltHex() {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   return bytesToHex(bytes);
 }
 
-async function sha256Hex(input) {
-  const data = new TextEncoder().encode(input);
+async function hashPinLegacy(pin, salt) {
+  const data = new TextEncoder().encode(`${salt}:${pin}`);
   const digest = await crypto.subtle.digest('SHA-256', data);
   return bytesToHex(new Uint8Array(digest));
 }
 
-async function hashPin(pin, salt) {
-  return sha256Hex(`${salt}:${pin}`);
+async function hashPinPbkdf2(pin, saltHex, iterations) {
+  const salt = hexToBytes(saltHex);
+  if (!salt) {
+    throw new Error('Invalid salt');
+  }
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(pin),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-256',
+      salt,
+      iterations,
+    },
+    keyMaterial,
+    256
+  );
+
+  return bytesToHex(new Uint8Array(derivedBits));
+}
+
+function timingSafeEqualHex(left, right) {
+  if (typeof left !== 'string' || typeof right !== 'string') {
+    return false;
+  }
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  let mismatch = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+
+  return mismatch === 0;
 }
 
 async function handleSetBreakGlassPin(message) {
@@ -616,11 +715,16 @@ async function handleSetBreakGlassPin(message) {
   }
 
   const salt = createSaltHex();
-  const pinHash = await hashPin(message.pin, salt);
+  const pinIterations =
+    Number.isInteger(cache.settings.breakGlass.pinIterations) && cache.settings.breakGlass.pinIterations >= 100000
+      ? cache.settings.breakGlass.pinIterations
+      : DEFAULT_BREAK_GLASS.pinIterations;
+  const pinHash = await hashPinPbkdf2(message.pin, salt, pinIterations);
 
   const nextSettings = deepClone(cache.settings);
   nextSettings.breakGlass.pinHash = pinHash;
   nextSettings.breakGlass.pinSalt = salt;
+  nextSettings.breakGlass.pinIterations = pinIterations;
   await updateSettings(nextSettings);
 
   appendEvent('break_glass_pin_set', null, {});
@@ -628,13 +732,18 @@ async function handleSetBreakGlassPin(message) {
 }
 
 async function verifyBreakGlassPin(pin) {
-  const { pinHash, pinSalt } = cache.settings.breakGlass;
+  const { pinHash, pinSalt, pinIterations } = cache.settings.breakGlass;
   if (!pinHash || !pinSalt || typeof pin !== 'string') {
     return false;
   }
 
-  const candidate = await hashPin(pin, pinSalt);
-  return candidate === pinHash;
+  if (Number.isInteger(pinIterations) && pinIterations >= 100000) {
+    const candidate = await hashPinPbkdf2(pin, pinSalt, pinIterations);
+    return timingSafeEqualHex(candidate, pinHash);
+  }
+
+  const candidate = await hashPinLegacy(pin, pinSalt);
+  return timingSafeEqualHex(candidate, pinHash);
 }
 
 async function handleActivateBreakGlass(message) {
@@ -694,8 +803,8 @@ async function handleToggleOverlay(message) {
   return { ok: true, ui: cache.settings.ui };
 }
 
-async function handleGetSiteStatus(message) {
-  const site = typeof message.siteId === 'string' ? getSiteById(message.siteId) : getSiteByUrl(message.url);
+async function handleGetSiteStatus(message, sender) {
+  const site = getSiteFromMessage(message, sender);
   if (!site) {
     return {
       ok: true,
@@ -732,6 +841,7 @@ async function handleGetStatus() {
 async function handleGetDiagnostics() {
   const nowTs = getNowTs();
   const status = buildStatusPayload(nowTs);
+  const safeSettings = getPublicSettings(cache.settings);
 
   return {
     ok: true,
@@ -741,7 +851,7 @@ async function handleGetDiagnostics() {
       eventLog: cache.eventLog,
       runtimeBySiteId: cache.runtimeBySiteId,
       breakGlassRuntime: cache.breakGlassRuntime,
-      settings: cache.settings,
+      settings: safeSettings,
       status,
     },
   };
@@ -947,7 +1057,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'GET_SITE_STATUS') {
-      return handleGetSiteStatus(message);
+      return handleGetSiteStatus(message, sender);
     }
 
     if (message.type === 'UPDATE_SETTINGS' && typeof message.settings === 'object') {

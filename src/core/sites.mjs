@@ -31,6 +31,23 @@ export function hostMatchesDomain(hostname, domain) {
   return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
 }
 
+export function getMatchedSiteFromHostname(hostname, matchers) {
+  const normalizedHost = normalizeHostname(hostname);
+  if (!normalizedHost || !Array.isArray(matchers)) {
+    return null;
+  }
+
+  for (const matcher of matchers) {
+    for (const domain of matcher.domains) {
+      if (hostMatchesDomain(normalizedHost, domain)) {
+        return matcher;
+      }
+    }
+  }
+
+  return null;
+}
+
 function getHostnameFromUrl(url) {
   try {
     return new URL(url).hostname.toLowerCase();
@@ -95,15 +112,7 @@ export function getMatchedSiteFromUrl(url, matchers) {
     return null;
   }
 
-  for (const matcher of matchers) {
-    for (const domain of matcher.domains) {
-      if (hostMatchesDomain(hostname, domain)) {
-        return matcher;
-      }
-    }
-  }
-
-  return null;
+  return getMatchedSiteFromHostname(hostname, matchers);
 }
 
 const defaultMatchers = compileSiteMatchers(DEFAULT_V2_SETTINGS.sites);

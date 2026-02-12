@@ -134,7 +134,7 @@ function requestSiteStatus() {
   chrome.runtime.sendMessage(
     {
       type: 'GET_SITE_STATUS',
-      url: window.location.href,
+      hostname: window.location.hostname,
     },
     (response) => {
       void chrome.runtime.lastError;
@@ -147,7 +147,7 @@ function sendHeartbeat() {
   chrome.runtime.sendMessage(
     {
       type: 'HEARTBEAT',
-      url: window.location.href,
+      hostname: window.location.hostname,
       sentAtTs: Date.now(),
     },
     (response) => {

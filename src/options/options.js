@@ -125,8 +125,6 @@ function readSettingsFromDom() {
     },
     breakGlass: {
       enabled: $('breakglass-enabled').checked,
-      pinHash: currentSettings.breakGlass.pinHash,
-      pinSalt: currentSettings.breakGlass.pinSalt,
       durationSec: breakGlassDurationSec,
       maxUsesPerDay: maxUses,
     },
