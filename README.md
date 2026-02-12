@@ -4,6 +4,11 @@ Kaigosha is a Chrome extension that enforces time limits on distracting websites
 
 It supports per-site limits, cooldown windows, strict tab enforcement, custom tracked domains, warning notifications, and PIN-protected temporary unlock.
 
+## Repository
+
+- GitHub: `https://github.com/abhishekbrt/kaigosha`
+- Default branch: `main`
+
 ## Features
 
 - Per-site policy:
@@ -27,7 +32,14 @@ It supports per-site limits, cooldown windows, strict tab enforcement, custom tr
 
 ## Installation (Developer Mode)
 
-1. Clone this repository.
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/abhishekbrt/kaigosha.git
+   cd kaigosha
+   git checkout main
+   ```
+
 2. Open `chrome://extensions`.
 3. Enable **Developer mode**.
 4. Click **Load unpacked**.
