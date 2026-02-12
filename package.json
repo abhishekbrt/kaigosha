@@ -1,0 +1,9 @@
+{
+  "name": "kaigosha-site-timer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chrome extension for per-site session and daily usage limits",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

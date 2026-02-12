@@ -70,3 +70,32 @@ test('day rollover resets runtime counters and mode', () => {
   assert.equal(next.mode, 'ALLOWED');
   assert.equal(next.blockedUntilTs, null);
 });
+
+test('normalizeRuntimeState returns initial state for invalid storage object', async () => {
+  const { normalizeRuntimeState } = await import('../src/core/state.mjs');
+  const now = at('2026-02-12T10:00:00.000Z');
+
+  const normalized = normalizeRuntimeState({ wrong: true }, now);
+
+  assert.equal(normalized.mode, 'ALLOWED');
+  assert.equal(normalized.dailyUsedSec, 0);
+  assert.equal(normalized.dayKey, '2026-02-12');
+});
+
+test('applyHeartbeat unblocks expired cooldown before counting time', () => {
+  const now = at('2026-02-12T10:10:00.000Z');
+  const before = {
+    dayKey: '2026-02-12',
+    dailyUsedSec: 600,
+    sessionUsedSec: 0,
+    mode: 'COOLDOWN',
+    blockedUntilTs: now - 1000,
+    lastHeartbeatTs: now - 2000,
+  };
+
+  const next = applyHeartbeat(before, CONFIG, now, 5);
+
+  assert.equal(next.mode, 'ALLOWED');
+  assert.equal(next.dailyUsedSec, 605);
+  assert.equal(next.sessionUsedSec, 5);
+});

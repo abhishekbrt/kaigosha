@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaigosha Timer</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup-header">
+        <h1>Kaigosha Timer</h1>
+        <p>Daily + session limits for X and Instagram</p>
+      </header>
+
+      <form id="settings-form">
+        <section class="site-card" data-site="x">
+          <h2>X / Twitter</h2>
+          <label>
+            Daily Limit (min)
+            <input id="x-daily" type="number" min="1" step="1" required />
+          </label>
+          <label>
+            One Session Limit (min)
+            <input id="x-session" type="number" min="1" step="1" required />
+          </label>
+          <label>
+            Cooldown (min)
+            <input id="x-cooldown" type="number" min="1" step="1" required />
+          </label>
+          <p id="x-status" class="status"></p>
+        </section>
+
+        <section class="site-card" data-site="instagram">
+          <h2>Instagram</h2>
+          <label>
+            Daily Limit (min)
+            <input id="instagram-daily" type="number" min="1" step="1" required />
+          </label>
+          <label>
+            One Session Limit (min)
+            <input id="instagram-session" type="number" min="1" step="1" required />
+          </label>
+          <label>
+            Cooldown (min)
+            <input id="instagram-cooldown" type="number" min="1" step="1" required />
+          </label>
+          <p id="instagram-status" class="status"></p>
+        </section>
+
+        <button type="submit" id="save-button">Save Settings</button>
+        <p id="feedback" class="feedback"></p>
+      </form>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

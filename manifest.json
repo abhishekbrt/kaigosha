@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Kaigosha Site Timer",
+  "description": "Control daily and per-session usage time for X and Instagram.",
+  "version": "1.0.0",
+  "permissions": ["storage", "tabs", "alarms"],
+  "host_permissions": [
+    "*://x.com/*",
+    "*://*.x.com/*",
+    "*://twitter.com/*",
+    "*://*.twitter.com/*",
+    "*://instagram.com/*",
+    "*://*.instagram.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Kaigosha Timer",
+    "default_popup": "src/popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://x.com/*",
+        "*://*.x.com/*",
+        "*://twitter.com/*",
+        "*://*.twitter.com/*",
+        "*://instagram.com/*",
+        "*://*.instagram.com/*"
+      ],
+      "js": ["src/content/tracker.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

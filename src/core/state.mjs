@@ -29,6 +29,35 @@ export function createInitialRuntimeState(nowTs) {
   };
 }
 
+function isValidMode(value) {
+  return value === MODE.ALLOWED || value === MODE.COOLDOWN || value === MODE.DAILY_BLOCK;
+}
+
+export function normalizeRuntimeState(rawState, nowTs) {
+  if (!rawState || typeof rawState !== 'object') {
+    return createInitialRuntimeState(nowTs);
+  }
+
+  const baseState = createInitialRuntimeState(nowTs);
+
+  const normalized = {
+    dayKey: typeof rawState.dayKey === 'string' ? rawState.dayKey : baseState.dayKey,
+    dailyUsedSec:
+      Number.isInteger(rawState.dailyUsedSec) && rawState.dailyUsedSec >= 0
+        ? rawState.dailyUsedSec
+        : 0,
+    sessionUsedSec:
+      Number.isInteger(rawState.sessionUsedSec) && rawState.sessionUsedSec >= 0
+        ? rawState.sessionUsedSec
+        : 0,
+    mode: isValidMode(rawState.mode) ? rawState.mode : MODE.ALLOWED,
+    blockedUntilTs: Number.isFinite(rawState.blockedUntilTs) ? rawState.blockedUntilTs : null,
+    lastHeartbeatTs: Number.isFinite(rawState.lastHeartbeatTs) ? rawState.lastHeartbeatTs : null,
+  };
+
+  return ensureCurrentDayState(normalized, nowTs);
+}
+
 export function ensureCurrentDayState(state, nowTs) {
   const dayKey = toDayKey(nowTs);
   if (state.dayKey === dayKey) {
