@@ -8,49 +8,44 @@
   </head>
   <body>
     <main class="popup">
-      <header class="popup-header">
+      <header>
         <h1>Kaigosha Timer</h1>
-        <p>Daily + session limits for X and Instagram</p>
+        <p>Strict limits, cooldowns, and break-glass controls</p>
       </header>
 
-      <form id="settings-form">
-        <section class="site-card" data-site="x">
-          <h2>X / Twitter</h2>
-          <label>
-            Daily Limit (min)
-            <input id="x-daily" type="number" min="1" step="1" required />
-          </label>
-          <label>
-            One Session Limit (min)
-            <input id="x-session" type="number" min="1" step="1" required />
-          </label>
-          <label>
-            Cooldown (min)
-            <input id="x-cooldown" type="number" min="1" step="1" required />
-          </label>
-          <p id="x-status" class="status"></p>
-        </section>
+      <section>
+        <h2>Live Status</h2>
+        <div id="sites" class="sites"></div>
+      </section>
 
-        <section class="site-card" data-site="instagram">
-          <h2>Instagram</h2>
-          <label>
-            Daily Limit (min)
-            <input id="instagram-daily" type="number" min="1" step="1" required />
-          </label>
-          <label>
-            One Session Limit (min)
-            <input id="instagram-session" type="number" min="1" step="1" required />
-          </label>
-          <label>
-            Cooldown (min)
-            <input id="instagram-cooldown" type="number" min="1" step="1" required />
-          </label>
-          <p id="instagram-status" class="status"></p>
-        </section>
+      <section class="panel">
+        <label class="toggle-line">
+          <input type="checkbox" id="overlay-toggle" />
+          Show in-page timer overlay
+        </label>
+      </section>
 
-        <button type="submit" id="save-button">Save Settings</button>
-        <p id="feedback" class="feedback"></p>
-      </form>
+      <section class="panel">
+        <h2>Break-Glass Unlock</h2>
+        <form id="unlock-form" class="unlock-form">
+          <label>
+            Site
+            <select id="unlock-site"></select>
+          </label>
+          <label>
+            PIN
+            <input id="unlock-pin" type="password" minlength="4" autocomplete="off" required />
+          </label>
+          <button type="submit">Unlock Temporarily</button>
+        </form>
+      </section>
+
+      <section class="actions">
+        <button id="open-options" type="button">Open Full Settings</button>
+        <button id="open-diagnostics" type="button">Diagnostics</button>
+      </section>
+
+      <p id="feedback" class="feedback"></p>
     </main>
 
     <script type="module" src="popup.js"></script>

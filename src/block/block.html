@@ -12,7 +12,17 @@
         <h1 id="title">Temporarily blocked</h1>
         <p id="reason" class="reason"></p>
         <p id="countdown" class="countdown"></p>
-        <p id="hint" class="hint">You can change limits from the extension popup.</p>
+
+        <form id="unlock-form" class="unlock-form">
+          <label>
+            Break-glass PIN
+            <input id="pin" type="password" minlength="4" autocomplete="off" required />
+          </label>
+          <button type="submit">Unlock Temporarily</button>
+        </form>
+
+        <button id="retry" type="button" class="secondary">Retry Opening Site</button>
+        <p id="feedback" class="feedback"></p>
       </section>
     </main>
 

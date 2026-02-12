@@ -1,0 +1,147 @@
+:root {
+  --bg: #f2f5fb;
+  --card: #ffffff;
+  --border: #d4dced;
+  --text: #162337;
+  --muted: #55637d;
+  --primary: #1e4dd8;
+  --primary-strong: #173ea7;
+  --danger: #b4213f;
+  --ok: #0d7a49;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top right, #d7e7ff 0, var(--bg) 40%);
+}
+
+.layout {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+header p {
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 12px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.site-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: #fbfcff;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.enabled-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  color: var(--text);
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--primary-strong);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.actions a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.pin-form {
+  display: grid;
+  gap: 8px;
+}
+
+.feedback {
+  min-height: 18px;
+  margin: 0;
+  color: var(--danger);
+}
+
+.feedback.success {
+  color: var(--ok);
+}

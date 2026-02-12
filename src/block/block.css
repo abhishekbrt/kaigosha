@@ -6,6 +6,8 @@
   --muted: #7b6752;
   --danger: #9d2c22;
   --accent: #c66b1c;
+  --primary: #1d4cd6;
+  --primary-strong: #133899;
 }
 
 * {
@@ -31,16 +33,18 @@ body {
 }
 
 .card {
-  width: min(540px, 100%);
+  width: min(560px, 100%);
   border: 1px solid var(--border);
   background: var(--card);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 18px 35px rgba(102, 68, 30, 0.18);
+  display: grid;
+  gap: 10px;
 }
 
 h1 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: clamp(26px, 3.5vw, 34px);
 }
 
@@ -52,12 +56,53 @@ h1 {
 }
 
 .countdown {
-  margin: 12px 0 0;
+  margin: 0;
   font-size: 16px;
   color: var(--accent);
 }
 
-.hint {
-  margin: 18px 0 0;
+.unlock-form {
+  display: grid;
+  gap: 8px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
   color: var(--muted);
+}
+
+input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 14px;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--primary-strong);
+}
+
+button.secondary {
+  background: #745f47;
+}
+
+.feedback {
+  margin: 0;
+  color: var(--danger);
+  min-height: 18px;
+}
+
+.feedback.success {
+  color: #0d7a49;
 }

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaigosha Diagnostics</title>
+    <link rel="stylesheet" href="diagnostics.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <h1>Kaigosha Diagnostics</h1>
+        <p>Inspect runtime state, event log, and migration health.</p>
+      </header>
+
+      <section class="actions">
+        <button id="refresh">Refresh</button>
+        <button id="clear" class="danger">Clear Diagnostics</button>
+      </section>
+
+      <pre id="output"></pre>
+      <p id="feedback"></p>
+    </main>
+
+    <script type="module" src="diagnostics.js"></script>
+  </body>
+</html>

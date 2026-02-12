@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaigosha Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <header>
+        <h1>Kaigosha Settings</h1>
+        <p>Manage custom sites, limits, warnings, overlay, and break-glass policy.</p>
+      </header>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Tracked Sites</h2>
+          <button id="add-site" type="button">Add Site</button>
+        </div>
+        <div id="sites-container" class="sites-grid"></div>
+      </section>
+
+      <section class="panel two-col">
+        <div>
+          <h2>Warning</h2>
+          <label><input id="warning-enabled" type="checkbox" /> Enable warning</label>
+          <label>
+            Threshold (seconds)
+            <input id="warning-threshold" type="number" min="10" step="1" />
+          </label>
+          <label><input id="warning-notify" type="checkbox" /> Browser notification</label>
+        </div>
+
+        <div>
+          <h2>Overlay</h2>
+          <label><input id="overlay-enabled" type="checkbox" /> Show in-page timer</label>
+          <label>
+            Position
+            <select id="overlay-position">
+              <option value="top-right">Top Right</option>
+              <option value="top-left">Top Left</option>
+              <option value="bottom-right">Bottom Right</option>
+              <option value="bottom-left">Bottom Left</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel two-col">
+        <div>
+          <h2>Break-Glass Policy</h2>
+          <label><input id="breakglass-enabled" type="checkbox" /> Enable temporary unlock</label>
+          <label>
+            Unlock Duration (minutes)
+            <input id="breakglass-duration" type="number" min="1" step="1" />
+          </label>
+          <label>
+            Max Uses Per Day
+            <input id="breakglass-max-uses" type="number" min="1" step="1" />
+          </label>
+        </div>
+
+        <div>
+          <h2>Break-Glass PIN</h2>
+          <form id="pin-form" class="pin-form">
+            <label>
+              New PIN
+              <input id="pin-input" type="password" minlength="4" autocomplete="off" />
+            </label>
+            <button type="submit">Set PIN</button>
+            <button id="clear-pin" type="button" class="danger">Clear PIN</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="actions">
+        <button id="save-settings" type="button">Save Settings</button>
+        <a href="../diagnostics/diagnostics.html" target="_blank" rel="noreferrer">Open Diagnostics</a>
+      </section>
+
+      <p id="feedback" class="feedback"></p>
+    </main>
+
+    <template id="site-template">
+      <article class="site-card">
+        <button type="button" class="remove-site danger">Remove</button>
+        <label>
+          ID
+          <input class="site-id" type="text" placeholder="youtube" />
+        </label>
+        <label>
+          Label
+          <input class="site-label" type="text" placeholder="YouTube" />
+        </label>
+        <label>
+          Domains (comma-separated)
+          <input class="site-domains" type="text" placeholder="youtube.com, m.youtube.com" />
+        </label>
+        <label>
+          Daily Limit (minutes)
+          <input class="site-daily" type="number" min="1" step="1" />
+        </label>
+        <label>
+          Session Limit (minutes)
+          <input class="site-session" type="number" min="1" step="1" />
+        </label>
+        <label>
+          Cooldown (minutes)
+          <input class="site-cooldown" type="number" min="1" step="1" />
+        </label>
+        <label class="enabled-line">
+          <input class="site-enabled" type="checkbox" />
+          Enabled
+        </label>
+      </article>
+    </template>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

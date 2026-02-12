@@ -1,10 +1,5 @@
-const SITE_LABELS = {
-  x: 'X / Twitter',
-  instagram: 'Instagram',
-};
-
 function formatDuration(totalSec) {
-  const sec = Math.max(0, Math.floor(totalSec));
+  const sec = Math.max(0, Math.floor(totalSec || 0));
   const minutes = Math.floor(sec / 60);
   const seconds = sec % 60;
 
@@ -17,61 +12,132 @@ function formatDuration(totalSec) {
   return `${seconds}s`;
 }
 
+function setFeedback(message, success = false) {
+  const feedback = document.getElementById('feedback');
+  feedback.textContent = message;
+  feedback.className = success ? 'feedback success' : 'feedback';
+}
+
 function parseQuery() {
   const params = new URLSearchParams(window.location.search);
   return {
-    siteKey: params.get('site') ?? 'x',
-    reason: params.get('reason') ?? 'cooldown',
+    siteId: params.get('siteId') || '',
+    reason: params.get('reason') || 'cooldown',
+    returnUrl: params.get('returnUrl') || '',
   };
 }
 
-function renderTitle(siteKey) {
-  const label = SITE_LABELS[siteKey] ?? siteKey;
-  document.getElementById('title').textContent = `${label} is blocked`;
-}
-
-function renderReason(reason) {
+function renderReason(siteStatus, fallbackReason) {
+  const reason = siteStatus?.reason || fallbackReason;
   const reasonText = reason === 'daily' ? 'Daily limit reached' : 'Session limit reached';
   document.getElementById('reason').textContent = reasonText;
 }
 
-function renderCountdown(remainingSec, blockedUntilTs) {
-  if (remainingSec <= 0) {
-    document.getElementById('countdown').textContent = 'You can retry now.';
+function renderTitle(siteStatus, siteId) {
+  const label = siteStatus?.label || siteId || 'Site';
+  document.getElementById('title').textContent = `${label} is blocked`;
+}
+
+function renderCountdown(siteStatus) {
+  const countdown = document.getElementById('countdown');
+
+  if (!siteStatus) {
+    countdown.textContent = 'Status unavailable';
     return;
   }
 
-  const until = new Date(blockedUntilTs).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  if (!siteStatus.blocked) {
+    if (siteStatus.breakGlassActive) {
+      countdown.textContent = `Break-glass active for ${formatDuration(siteStatus.breakGlassRemainingSec)}`;
+    } else {
+      countdown.textContent = 'You can retry now.';
+    }
+    return;
+  }
 
-  document.getElementById('countdown').textContent = `Retry in ${formatDuration(remainingSec)} (unlocks around ${until})`;
+  countdown.textContent = `Retry in ${formatDuration(siteStatus.remainingSec)}`;
 }
 
-async function refresh(siteKey, fallbackReason) {
+async function getSiteStatus(siteId) {
   const response = await chrome.runtime.sendMessage({
     type: 'GET_SITE_STATUS',
-    siteKey,
+    siteId,
   });
 
-  if (!response?.ok || !response.site) {
-    document.getElementById('countdown').textContent = 'Status unavailable. Check extension popup.';
+  if (!response?.ok) {
+    throw new Error(response?.error || 'Failed to load status');
+  }
+
+  return response.site;
+}
+
+async function activateBreakGlass(siteId, pin) {
+  const response = await chrome.runtime.sendMessage({
+    type: 'ACTIVATE_BREAK_GLASS',
+    siteId,
+    pin,
+  });
+
+  if (!response?.ok) {
+    throw new Error(response?.error || 'Unlock failed');
+  }
+
+  return response;
+}
+
+function navigateToReturnUrl(returnUrl, siteStatus) {
+  if (returnUrl) {
+    window.location.href = returnUrl;
     return;
   }
 
-  renderReason(response.site.reason ?? fallbackReason);
-  renderCountdown(response.site.remainingSec, response.site.blockedUntilTs);
+  if (siteStatus?.domains?.length) {
+    window.location.href = `https://${siteStatus.domains[0]}`;
+  }
 }
 
-const { siteKey, reason } = parseQuery();
-renderTitle(siteKey);
-renderReason(reason);
+const context = parseQuery();
 
-refresh(siteKey, reason).catch(() => {
-  document.getElementById('countdown').textContent = 'Status unavailable. Check extension popup.';
+async function refresh() {
+  const siteStatus = await getSiteStatus(context.siteId);
+  renderTitle(siteStatus, context.siteId);
+  renderReason(siteStatus, context.reason);
+  renderCountdown(siteStatus);
+
+  if (!siteStatus?.blocked && !siteStatus?.breakGlassActive) {
+    setFeedback('Site available now', true);
+  }
+
+  return siteStatus;
+}
+
+document.getElementById('unlock-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const pin = document.getElementById('pin').value;
+
+  activateBreakGlass(context.siteId, pin)
+    .then(() => {
+      setFeedback('Temporary unlock activated', true);
+      document.getElementById('pin').value = '';
+      return refresh();
+    })
+    .then((siteStatus) => {
+      navigateToReturnUrl(context.returnUrl, siteStatus);
+    })
+    .catch((error) => setFeedback(error.message));
 });
 
+document.getElementById('retry').addEventListener('click', () => {
+  refresh()
+    .then((siteStatus) => {
+      if (!siteStatus?.blocked || siteStatus?.breakGlassActive) {
+        navigateToReturnUrl(context.returnUrl, siteStatus);
+      }
+    })
+    .catch((error) => setFeedback(error.message));
+});
+
+refresh().catch((error) => setFeedback(error.message));
 setInterval(() => {
-  refresh(siteKey, reason).catch(() => {});
+  refresh().catch(() => {});
 }, 1000);
