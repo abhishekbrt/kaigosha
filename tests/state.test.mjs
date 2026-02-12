@@ -118,3 +118,27 @@ test('zero-delta refresh does not overwrite last heartbeat timestamp', () => {
   assert.equal(next.sessionUsedSec, 20);
   assert.equal(next.lastHeartbeatTs, previousHeartbeat);
 });
+
+test('warning flag can be set for active session', async () => {
+  const { markWarningIssued } = await import('../src/core/state.mjs');
+  const now = at('2026-02-12T10:00:00.000Z');
+  const initial = createInitialRuntimeState(now);
+
+  const warned = markWarningIssued(initial);
+
+  assert.equal(warned.warningIssuedForSession, true);
+});
+
+test('session rollover clears warning flag', () => {
+  const now = at('2026-02-12T10:00:00.000Z');
+  const initial = {
+    ...createInitialRuntimeState(now),
+    warningIssuedForSession: true,
+    sessionUsedSec: 590,
+  };
+
+  const next = applyHeartbeat(initial, CONFIG, now + 1000, 10);
+
+  assert.equal(next.mode, 'COOLDOWN');
+  assert.equal(next.warningIssuedForSession, false);
+});

@@ -23,6 +23,7 @@ export function createInitialRuntimeState(nowTs) {
     dayKey: toDayKey(nowTs),
     dailyUsedSec: 0,
     sessionUsedSec: 0,
+    warningIssuedForSession: false,
     mode: MODE.ALLOWED,
     blockedUntilTs: null,
     lastHeartbeatTs: null,
@@ -50,6 +51,7 @@ export function normalizeRuntimeState(rawState, nowTs) {
       Number.isInteger(rawState.sessionUsedSec) && rawState.sessionUsedSec >= 0
         ? rawState.sessionUsedSec
         : 0,
+    warningIssuedForSession: Boolean(rawState.warningIssuedForSession),
     mode: isValidMode(rawState.mode) ? rawState.mode : MODE.ALLOWED,
     blockedUntilTs: Number.isFinite(rawState.blockedUntilTs) ? rawState.blockedUntilTs : null,
     lastHeartbeatTs: Number.isFinite(rawState.lastHeartbeatTs) ? rawState.lastHeartbeatTs : null,
@@ -68,9 +70,17 @@ export function ensureCurrentDayState(state, nowTs) {
     dayKey,
     dailyUsedSec: 0,
     sessionUsedSec: 0,
+    warningIssuedForSession: false,
     mode: MODE.ALLOWED,
     blockedUntilTs: null,
     lastHeartbeatTs: null,
+  };
+}
+
+export function markWarningIssued(state) {
+  return {
+    ...state,
+    warningIssuedForSession: true,
   };
 }
 
@@ -124,6 +134,7 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
       ...next,
       dailyUsedSec: config.dailyLimitSec,
       sessionUsedSec,
+      warningIssuedForSession: false,
       mode: MODE.DAILY_BLOCK,
       blockedUntilTs: getNextLocalMidnightTs(nowTs),
       lastHeartbeatTs: nextHeartbeatTs,
@@ -135,6 +146,7 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
       ...next,
       dailyUsedSec,
       sessionUsedSec: 0,
+      warningIssuedForSession: false,
       mode: MODE.COOLDOWN,
       blockedUntilTs: nowTs + config.cooldownSec * 1000,
       lastHeartbeatTs: nextHeartbeatTs,
@@ -145,6 +157,7 @@ export function applyHeartbeat(state, config, nowTs, deltaSec) {
     ...next,
     dailyUsedSec,
     sessionUsedSec,
+    warningIssuedForSession: Boolean(next.warningIssuedForSession),
     mode: MODE.ALLOWED,
     blockedUntilTs: null,
     lastHeartbeatTs: nextHeartbeatTs,
