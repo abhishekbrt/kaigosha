@@ -2,12 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildLegacySettingsMap,
   DEFAULT_SETTINGS,
+  DEFAULT_V2_SETTINGS,
   normalizeSettings,
   secondsFromMinutes,
 } from '../src/core/config.mjs';
 
-test('default settings provide per-site limits', () => {
+test('default legacy map keeps per-site limits for compatibility', () => {
   assert.deepEqual(DEFAULT_SETTINGS.x, {
     dailyLimitSec: 1800,
     sessionLimitSec: 600,
@@ -20,7 +22,7 @@ test('default settings provide per-site limits', () => {
   });
 });
 
-test('normalizeSettings falls back to defaults on invalid input', () => {
+test('normalizeSettings falls back to v2 defaults on invalid input', () => {
   const normalized = normalizeSettings({
     x: {
       dailyLimitSec: -1,
@@ -29,10 +31,10 @@ test('normalizeSettings falls back to defaults on invalid input', () => {
     },
   });
 
-  assert.deepEqual(normalized, DEFAULT_SETTINGS);
+  assert.deepEqual(normalized, DEFAULT_V2_SETTINGS);
 });
 
-test('normalizeSettings accepts valid per-site overrides', () => {
+test('normalizeSettings accepts valid legacy per-site overrides and migrates to v2', () => {
   const normalized = normalizeSettings({
     x: {
       dailyLimitSec: 1200,
@@ -46,8 +48,10 @@ test('normalizeSettings accepts valid per-site overrides', () => {
     },
   });
 
-  assert.equal(normalized.x.dailyLimitSec, 1200);
-  assert.equal(normalized.instagram.cooldownSec, 60);
+  const legacyMap = buildLegacySettingsMap(normalized);
+  assert.equal(legacyMap.x.dailyLimitSec, 1200);
+  assert.equal(legacyMap.instagram.cooldownSec, 60);
+  assert.equal(normalized.version, 2);
 });
 
 test('secondsFromMinutes converts whole minutes safely', () => {
